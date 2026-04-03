@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { generateImage, GenerateResponse } from '@/lib/api';
+import { submitGenerateTask, pollTaskUntilComplete } from '@/lib/api';
 
 export interface Style {
   id: string;
@@ -62,34 +62,34 @@ export function useImageTransfer() {
 
     setLoading(true);
     setError(null);
-    setProgress(10);
-
-    // 模拟进度
-    const progressInterval = setInterval(() => {
-      setProgress((p) => {
-        if (p >= 90) return p;
-        return p + Math.random() * 15;
-      });
-    }, 1000);
+    setProgress(5);
 
     try {
-      const result: GenerateResponse = await generateImage(
-        originalImage,
-        style.prompt
+      // 步骤 1: 提交异步任务
+      setProgress(10);
+      const submitResult = await submitGenerateTask(originalImage, style.prompt);
+
+      if (!submitResult.success || !submitResult.taskId) {
+        throw new Error(submitResult.error || '提交任务失败');
+      }
+
+      // 步骤 2: 轮询等待结果
+      setProgress(20);
+      const resultUrl = await pollTaskUntilComplete(
+        submitResult.taskId,
+        (p) => setProgress(20 + p * 0.75), // 20% - 95%
+        60,  // 最多 60 次尝试
+        2000 // 每 2 秒查询一次
       );
 
-      clearInterval(progressInterval);
-
-      if (result.success && result.resultUrl) {
-        setResultImage(result.resultUrl);
+      if (resultUrl) {
+        setResultImage(resultUrl);
         setProgress(100);
       } else {
-        setError(result.error || '生成失败');
-        setProgress(0);
+        throw new Error('生成结果为空');
       }
     } catch (err) {
-      clearInterval(progressInterval);
-      setError(err instanceof Error ? err.message : '未知错误');
+      setError(err instanceof Error ? err.message : '生成失败');
       setProgress(0);
     } finally {
       setLoading(false);
