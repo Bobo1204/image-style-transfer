@@ -9,6 +9,7 @@ export interface GenerateResponse {
   resultUrl?: string;
   taskId?: string;
   error?: string;
+  isSync?: boolean;
 }
 
 export interface TaskStatusResponse {
@@ -29,6 +30,12 @@ export async function submitGenerateTask(
   const API_KEY = process.env.NEXT_PUBLIC_API_KEY;
   const MODEL = process.env.NEXT_PUBLIC_MODEL;
 
+  console.log('[API] Environment check:', {
+    hasUrl: !!API_URL,
+    hasKey: !!API_KEY,
+    model: MODEL,
+  });
+
   // 检查环境变量
   if (!API_URL || !API_KEY) {
     return {
@@ -37,12 +44,34 @@ export async function submitGenerateTask(
     };
   }
 
+  // 检查参数
+  if (!imageBase64 || imageBase64.length < 100) {
+    return {
+      success: false,
+      error: '图片数据无效',
+    };
+  }
+
+  if (!stylePrompt || stylePrompt.trim().length === 0) {
+    return {
+      success: false,
+      error: '风格描述不能为空',
+    };
+  }
+
   try {
     const requestBody: GenerateRequest = {
-      prompt: stylePrompt,
+      prompt: stylePrompt.trim(),
       images: [imageBase64],
       model: MODEL || 'dall-e-3',
     };
+
+    console.log('[API] Request:', {
+      url: API_URL,
+      promptLength: requestBody.prompt.length,
+      imageLength: requestBody.images[0].length,
+      model: requestBody.model,
+    });
 
     const response = await fetch(API_URL, {
       method: 'POST',
@@ -53,22 +82,65 @@ export async function submitGenerateTask(
       body: JSON.stringify(requestBody),
     });
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
+    console.log('[API] Response status:', response.status);
+
+    const responseText = await response.text();
+    console.log('[API] Response raw text (first 500 chars):', responseText.slice(0, 500));
+
+    let data: any;
+    try {
+      data = JSON.parse(responseText);
+    } catch (parseErr) {
       return {
         success: false,
-        error: errorData.error?.message || `API 错误: ${response.status}`,
+        error: `接口返回非 JSON: ${responseText.slice(0, 200)}`,
       };
     }
 
-    const data = await response.json();
-    
-    // 异步 API 返回任务 ID
+    console.log('[API] Response data:', data);
+
+    if (!response.ok) {
+      return {
+        success: false,
+        error: data.error?.message || data.message || `API 错误: ${response.status}`,
+      };
+    }
+
+    // 优先尝试异步任务 ID
+    const taskId = data.task_id || data.id || data.data?.task_id;
+    if (taskId) {
+      return {
+        success: true,
+        taskId,
+        isSync: false,
+      };
+    }
+
+    // 兼容同步直返图片（OpenAI / DALL-E 格式）
+    const b64Image = data.data?.[0]?.b64_json;
+    if (b64Image) {
+      return {
+        success: true,
+        resultUrl: `data:image/png;base64,${b64Image}`,
+        isSync: true,
+      };
+    }
+
+    const imageUrl = data.data?.[0]?.url || data.image_url || data.url;
+    if (imageUrl) {
+      return {
+        success: true,
+        resultUrl: imageUrl,
+        isSync: true,
+      };
+    }
+
     return {
-      success: true,
-      taskId: data.task_id || data.id,
+      success: false,
+      error: '接口返回格式异常，未找到 task_id 或图片数据',
     };
   } catch (error) {
+    console.error('[API] Error:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : '提交任务失败',
@@ -115,7 +187,7 @@ export async function checkTaskStatus(taskId: string): Promise<TaskStatusRespons
     return {
       success: true,
       status: data.status || 'pending',
-      resultUrl: data.result_url || data.image_url,
+      resultUrl: data.result_url || data.image_url || data.data?.url,
     };
   } catch (error) {
     return {

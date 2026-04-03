@@ -65,15 +65,26 @@ export function useImageTransfer() {
     setProgress(5);
 
     try {
-      // 步骤 1: 提交异步任务
+      // 步骤 1: 提交生成任务
       setProgress(10);
       const submitResult = await submitGenerateTask(originalImage, style.prompt);
 
-      if (!submitResult.success || !submitResult.taskId) {
+      if (!submitResult.success) {
         throw new Error(submitResult.error || '提交任务失败');
       }
 
-      // 步骤 2: 轮询等待结果
+      // 同步返回结果：直接使用，无需轮询
+      if (submitResult.isSync && submitResult.resultUrl) {
+        setResultImage(submitResult.resultUrl);
+        setProgress(100);
+        return;
+      }
+
+      // 异步返回：轮询等待结果
+      if (!submitResult.taskId) {
+        throw new Error('提交任务失败：未返回任务 ID');
+      }
+
       setProgress(20);
       const resultUrl = await pollTaskUntilComplete(
         submitResult.taskId,
