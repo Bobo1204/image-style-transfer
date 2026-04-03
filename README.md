@@ -1,4 +1,4 @@
-# Style Transfer Web
+# Image Style Transfer
 
 AI Image Style Transfer Tool - MVP Version
 
