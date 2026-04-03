@@ -1,26 +1,58 @@
-export async function transferStyle(
+export interface GenerateRequest {
+  prompt: string;
+  images: string[];
+  model: string;
+}
+
+export interface GenerateResponse {
+  success: boolean;
+  resultUrl?: string;
+  error?: string;
+}
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://ark.cn-beijing.volces.com/api/v3/images/generations';
+const API_KEY = process.env.NEXT_PUBLIC_API_KEY;
+const MODEL = process.env.NEXT_PUBLIC_MODEL || 'doubao-seedance-1-5-pro-251215';
+
+export async function generateImage(
   imageBase64: string,
-  styleId: string
-): Promise<string> {
-  const API_URL = process.env.NEXT_PUBLIC_API_URL;
-  const API_KEY = process.env.NEXT_PUBLIC_API_KEY;
+  stylePrompt: string
+): Promise<GenerateResponse> {
+  try {
+    const requestBody: GenerateRequest = {
+      prompt: stylePrompt,
+      images: [imageBase64],
+      model: MODEL,
+    };
 
-  const response = await fetch(API_URL!, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${API_KEY}`,
-    },
-    body: JSON.stringify({
-      image: imageBase64,
-      style: styleId,
-    }),
-  });
+    const response = await fetch(API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${API_KEY}`,
+      },
+      body: JSON.stringify(requestBody),
+    });
 
-  if (!response.ok) {
-    throw new Error('Style transfer failed');
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      return {
+        success: false,
+        error: errorData.error?.message || `API 错误: ${response.status}`,
+      };
+    }
+
+    const data = await response.json();
+    
+    // 根据实际 API 响应结构调整
+    return {
+      success: true,
+      resultUrl: data.data?.[0]?.url || data.url || data.image_url,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : '生成失败',
+    };
   }
-
-  const data = await response.json();
-  return data.resultUrl;
 }
