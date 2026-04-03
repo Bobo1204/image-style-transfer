@@ -41,7 +41,7 @@ export async function submitGenerateTask(
     const requestBody: GenerateRequest = {
       prompt: stylePrompt,
       images: [imageBase64],
-      model: MODEL || 'doubao-seedance-1-5-pro-251215',
+      model: MODEL || 'dall-e-3',
     };
 
     const response = await fetch(API_URL, {
