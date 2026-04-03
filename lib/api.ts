@@ -10,19 +10,27 @@ export interface GenerateResponse {
   error?: string;
 }
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://ark.cn-beijing.volces.com/api/v3/images/generations';
-const API_KEY = process.env.NEXT_PUBLIC_API_KEY;
-const MODEL = process.env.NEXT_PUBLIC_MODEL || 'doubao-seedance-1-5-pro-251215';
-
 export async function generateImage(
   imageBase64: string,
   stylePrompt: string
 ): Promise<GenerateResponse> {
+  const API_URL = process.env.NEXT_PUBLIC_API_URL;
+  const API_KEY = process.env.NEXT_PUBLIC_API_KEY;
+  const MODEL = process.env.NEXT_PUBLIC_MODEL;
+
+  // 检查环境变量
+  if (!API_URL || !API_KEY) {
+    return {
+      success: false,
+      error: 'API 配置缺失，请检查环境变量',
+    };
+  }
+
   try {
     const requestBody: GenerateRequest = {
       prompt: stylePrompt,
       images: [imageBase64],
-      model: MODEL,
+      model: MODEL || 'doubao-seedance-1-5-pro-251215',
     };
 
     const response = await fetch(API_URL, {
@@ -44,7 +52,6 @@ export async function generateImage(
 
     const data = await response.json();
     
-    // 根据实际 API 响应结构调整
     return {
       success: true,
       resultUrl: data.data?.[0]?.url || data.url || data.image_url,
