@@ -8,33 +8,19 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      deployments: write
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: '20'
-
-      - name: Install dependencies
-        run: npm install
-
-      - name: Build
-        run: npm run build
+      - run: npm install
+      - run: npm run build
         env:
-          NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
-          NEXT_PUBLIC_API_KEY: ${{ secrets.NEXT_PUBLIC_API_KEY }}
-          NEXT_PUBLIC_MODEL: ${{ secrets.NEXT_PUBLIC_MODEL }}
-
-      - name: Deploy to Cloudflare Pages
-        uses: cloudflare/pages-action@v1
+          NEXT_PUBLIC_API_URL: https://llm-service.polymas.com/api/openai/v1/images/task/async
+          NEXT_PUBLIC_API_KEY: sk-zAJCqOxm3vgTLgVVfAcXOmpL6jHoVRTqPjwxnBohLaiueIdk
+          NEXT_PUBLIC_MODEL: dall-e-3
+      - uses: cloudflare/wrangler-action@v3
         with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          projectName: image-style-transfer
-          directory: .next
-          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+          apiToken: cfat_y4pkGWptkIj4turE0uYPQyZ8o0uD8YP1OjbuXxzX23100608
+          accountId: 118d72a731155900747453dbb4e440a9
+          command: pages deploy .next --project-name=image-style-transfer --branch=main
