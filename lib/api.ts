@@ -86,7 +86,7 @@ export async function pollTaskUntilComplete(
   onProgress?: (progress: number) => void,
   maxAttempts: number = 60,
   intervalMs: number = 2000
-): Promise<TaskResponse> {
+): Promise<string | null> {
   // 模拟轮询进度
   if (onProgress) {
     for (let i = 0; i <= 10; i++) {
@@ -95,11 +95,6 @@ export async function pollTaskUntilComplete(
     }
   }
   
-  // 同步调用，直接返回
-  return {
-    success: true,
-    taskId,
-    status: 'completed',
-    isSync: true,
-  };
+  // 同步调用，直接返回成功
+  return 'completed';
 }
