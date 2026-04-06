@@ -82,8 +82,19 @@ export async function submitGenerateTask(
 }
 
 export async function pollTaskUntilComplete(
-  taskId: string
+  taskId: string,
+  onProgress?: (progress: number) => void,
+  maxAttempts: number = 60,
+  intervalMs: number = 2000
 ): Promise<TaskResponse> {
+  // 模拟轮询进度
+  if (onProgress) {
+    for (let i = 0; i <= 10; i++) {
+      onProgress(i * 10);
+      await new Promise(resolve => setTimeout(resolve, intervalMs / 10));
+    }
+  }
+  
   // 同步调用，直接返回
   return {
     success: true,
