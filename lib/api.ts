@@ -10,6 +10,14 @@ export interface GenerateResponse {
   error?: string;
 }
 
+export interface TaskResponse {
+  success: boolean;
+  taskId?: string;
+  resultUrl?: string;
+  status?: string;
+  error?: string;
+}
+
 const API_URL = 'https://llm-service.polymas.com/api/openai/v1/images/generations';
 const API_KEY = 'sk-zAJCqOxm3vgTLgVVfAcXOmpL6jHoVRTqPjwxnBohLaiueIdk';
 const MODEL = 'doubao-seedream-3-0-t2i-250415';
@@ -44,7 +52,6 @@ export async function generateImage(
 
     const data = await response.json();
     
-    // 根据实际 API 响应结构调整
     return {
       success: true,
       resultUrl: data.data?.[0]?.url || data.url || data.image_url || data.output?.url,
@@ -55,4 +62,30 @@ export async function generateImage(
       error: error instanceof Error ? error.message : '生成失败',
     };
   }
+}
+
+// 兼容旧版 API 调用
+export async function submitGenerateTask(
+  imageBase64: string,
+  stylePrompt: string
+): Promise<TaskResponse> {
+  const result = await generateImage(imageBase64, stylePrompt);
+  return {
+    success: result.success,
+    taskId: result.success ? 'sync-task' : undefined,
+    resultUrl: result.resultUrl,
+    status: result.success ? 'completed' : 'failed',
+    error: result.error,
+  };
+}
+
+export async function pollTaskUntilComplete(
+  taskId: string
+): Promise<TaskResponse> {
+  // 同步调用，直接返回
+  return {
+    success: true,
+    taskId,
+    status: 'completed',
+  };
 }
