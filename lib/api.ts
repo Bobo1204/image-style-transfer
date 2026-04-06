@@ -15,6 +15,7 @@ export interface TaskResponse {
   taskId?: string;
   resultUrl?: string;
   status?: string;
+  isSync?: boolean;
   error?: string;
 }
 
@@ -75,6 +76,7 @@ export async function submitGenerateTask(
     taskId: result.success ? 'sync-task' : undefined,
     resultUrl: result.resultUrl,
     status: result.success ? 'completed' : 'failed',
+    isSync: true,
     error: result.error,
   };
 }
@@ -87,5 +89,6 @@ export async function pollTaskUntilComplete(
     success: true,
     taskId,
     status: 'completed',
+    isSync: true,
   };
 }
