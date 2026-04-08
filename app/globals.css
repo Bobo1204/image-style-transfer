@@ -23,3 +23,8 @@ body {
     text-wrap: balance;
   }
 }
+
+/* Google Sign In Button Styles */
+#google-signin-button iframe {
+  border-radius: 8px !important;
+}
