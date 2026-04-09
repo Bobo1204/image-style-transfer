@@ -24,12 +24,14 @@ declare global {
   }
 }
 
+// 硬编码 Google Client ID
+const GOOGLE_CLIENT_ID = '691367567402-ittqpqispd6carvm5ffjof29n68atvpa.apps.googleusercontent.com'
+
 export function UserAuth() {
   const [user, setUser] = useState<GoogleUser | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // 检查本地存储的用户信息
     const stored = localStorage.getItem('user')
     if (stored) {
       setUser(JSON.parse(stored))
@@ -39,9 +41,8 @@ export function UserAuth() {
 
   useEffect(() => {
     if (typeof window === 'undefined') return
-    if (!process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID) return
+    if (!GOOGLE_CLIENT_ID) return
 
-    // 加载 Google Identity API
     const script = document.createElement('script')
     script.src = 'https://accounts.google.com/gsi/client'
     script.async = true
@@ -49,7 +50,7 @@ export function UserAuth() {
     script.onload = () => {
       if (window.google) {
         window.google.accounts.id.initialize({
-          client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID,
+          client_id: GOOGLE_CLIENT_ID,
           callback: handleCredentialResponse,
         })
 
@@ -73,7 +74,6 @@ export function UserAuth() {
   }, [loading])
 
   const handleCredentialResponse = (response: any) => {
-    // 解码 JWT
     const payload = JSON.parse(atob(response.credential.split('.')[1]))
     const userData: GoogleUser = {
       id: payload.sub,
@@ -112,7 +112,6 @@ export function UserAuth() {
           </div>
         )}
         <span className="text-sm text-gray-700 hidden sm:block max-w-[100px] truncate">{user.name}</span>
-        
         <button
           onClick={handleSignOut}
           className="p-2 text-gray-400 hover:text-red-500 transition-colors"
