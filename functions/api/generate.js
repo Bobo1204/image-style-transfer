@@ -1,10 +1,4 @@
-export interface Env {
-  API_KEY: string
-  API_URL: string
-  MODEL: string
-}
-
-export const onRequestPost: PagesFunction<Env> = async (context) => {
+export async function onRequestPost(context) {
   try {
     const { image, prompt } = await context.request.json()
     
