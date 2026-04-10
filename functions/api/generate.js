@@ -2,6 +2,18 @@ export async function onRequestPost(context) {
   try {
     const { image, prompt } = await context.request.json()
     
+    // 调试：检查环境变量
+    console.log('API_URL:', context.env.API_URL)
+    console.log('MODEL:', context.env.MODEL)
+    console.log('API_KEY exists:', !!context.env.API_KEY)
+    
+    if (!context.env.API_URL) {
+      return new Response(JSON.stringify({
+        success: false,
+        error: 'API_URL not configured'
+      }), { status: 500 })
+    }
+    
     const response = await fetch(context.env.API_URL, {
       method: 'POST',
       headers: {
@@ -29,6 +41,7 @@ export async function onRequestPost(context) {
       resultUrl: data.data?.[0]?.url || data.url || data.image_url || data.output?.url
     }))
   } catch (error) {
+    console.error('Error:', error)
     return new Response(JSON.stringify({
       success: false,
       error: error instanceof Error ? error.message : '生成失败'
