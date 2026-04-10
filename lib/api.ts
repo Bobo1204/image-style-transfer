@@ -1,67 +1,37 @@
 export interface GenerateRequest {
-  model: string;
-  prompt: string;
-  image?: string;
+  image: string
+  prompt: string
 }
 
 export interface GenerateResponse {
-  success: boolean;
-  resultUrl?: string;
-  error?: string;
+  success: boolean
+  resultUrl?: string
+  error?: string
 }
-
-export interface TaskResponse {
-  success: boolean;
-  taskId?: string;
-  resultUrl?: string;
-  status?: string;
-  isSync?: boolean;
-  error?: string;
-}
-
-const API_URL = 'https://llm-service.polymas.com/api/openai/v1/images/generations';
-const API_KEY = 'sk-zAJCqOxm3vgTLgVVfAcXOmpL6jHoVRTqPjwxnBohLaiueIdk';
-const MODEL = 'doubao-seedream-3-0-t2i-250415';
 
 export async function generateImage(
   imageBase64: string,
   stylePrompt: string
 ): Promise<GenerateResponse> {
   try {
-    const requestBody: GenerateRequest = {
-      model: MODEL,
-      prompt: stylePrompt,
-      image: imageBase64,
-    };
-
-    const response = await fetch(API_URL, {
+    const response = await fetch('/api/generate', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'api-key': API_KEY,
       },
-      body: JSON.stringify(requestBody),
-    });
+      body: JSON.stringify({
+        image: imageBase64,
+        prompt: stylePrompt,
+      }),
+    })
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      return {
-        success: false,
-        error: errorData.error?.message || `API 错误: ${response.status}`,
-      };
-    }
-
-    const data = await response.json();
-    
-    return {
-      success: true,
-      resultUrl: data.data?.[0]?.url || data.url || data.image_url || data.output?.url,
-    };
+    const data = await response.json()
+    return data
   } catch (error) {
     return {
       success: false,
       error: error instanceof Error ? error.message : '生成失败',
-    };
+    }
   }
 }
 
@@ -69,8 +39,8 @@ export async function generateImage(
 export async function submitGenerateTask(
   imageBase64: string,
   stylePrompt: string
-): Promise<TaskResponse> {
-  const result = await generateImage(imageBase64, stylePrompt);
+) {
+  const result = await generateImage(imageBase64, stylePrompt)
   return {
     success: result.success,
     taskId: result.success ? 'sync-task' : undefined,
@@ -78,7 +48,7 @@ export async function submitGenerateTask(
     status: result.success ? 'completed' : 'failed',
     isSync: true,
     error: result.error,
-  };
+  }
 }
 
 export async function pollTaskUntilComplete(
@@ -87,14 +57,11 @@ export async function pollTaskUntilComplete(
   maxAttempts: number = 60,
   intervalMs: number = 2000
 ): Promise<string | null> {
-  // 模拟轮询进度
   if (onProgress) {
     for (let i = 0; i <= 10; i++) {
-      onProgress(i * 10);
-      await new Promise(resolve => setTimeout(resolve, intervalMs / 10));
+      onProgress(i * 10)
+      await new Promise(resolve => setTimeout(resolve, intervalMs / 10))
     }
   }
-  
-  // 同步调用，直接返回成功
-  return 'completed';
+  return 'completed'
 }

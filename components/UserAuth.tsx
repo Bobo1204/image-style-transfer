@@ -24,9 +24,6 @@ declare global {
   }
 }
 
-// 硬编码 Google Client ID
-const GOOGLE_CLIENT_ID = '691367567402-ittqpqispd6carvm5ffjof29n68atvpa.apps.googleusercontent.com'
-
 export function UserAuth() {
   const [user, setUser] = useState<GoogleUser | null>(null)
   const [loading, setLoading] = useState(true)
@@ -41,7 +38,15 @@ export function UserAuth() {
 
   useEffect(() => {
     if (typeof window === 'undefined') return
-    if (!GOOGLE_CLIENT_ID) return
+    
+    // 从 meta 标签获取 Google Client ID
+    const metaTag = document.querySelector('meta[name="google-client-id"]')
+    const clientId = metaTag?.getAttribute('content')
+    
+    if (!clientId) {
+      console.warn('Google Client ID not found')
+      return
+    }
 
     const script = document.createElement('script')
     script.src = 'https://accounts.google.com/gsi/client'
@@ -50,7 +55,7 @@ export function UserAuth() {
     script.onload = () => {
       if (window.google) {
         window.google.accounts.id.initialize({
-          client_id: GOOGLE_CLIENT_ID,
+          client_id: clientId,
           callback: handleCredentialResponse,
         })
 
@@ -107,7 +112,8 @@ export function UserAuth() {
             className="w-8 h-8 rounded-full border-2 border-white shadow-sm"
           />
         ) : (
-          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white text-sm font-medium">
+          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white text-sm font-medium"
+          >
             {user.name?.[0] || 'U'}
           </div>
         )}
