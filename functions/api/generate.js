@@ -1,25 +1,20 @@
+// 临时硬编码环境变量（生产环境应使用 Cloudflare Dashboard 配置）
+const ENV = {
+  API_KEY: 'sk-zAJCqOxm3vgTLgVVfAcXOmpL6jHoVRTqPjwxnBohLaiueIdk',
+  API_URL: 'https://llm-service.polymas.com/api/openai/v1/images/generations',
+  MODEL: 'doubao-seedream-3-0-t2i-250415'
+}
+
 export async function onRequestPost(context) {
   try {
     const { image, prompt } = await context.request.json()
     
-    // 尝试多种方式读取环境变量
-    const API_URL = context.env?.API_URL 
-    const API_KEY = context.env?.API_KEY 
-    const MODEL = context.env?.MODEL 
+    // 优先使用 context.env，如果不存在则使用硬编码
+    const API_URL = context.env?.API_URL || ENV.API_URL
+    const API_KEY = context.env?.API_KEY || ENV.API_KEY
+    const MODEL = context.env?.MODEL || ENV.MODEL
     
-    console.log('Debug - API_URL:', API_URL)
-    console.log('Debug - MODEL:', MODEL)
-    console.log('Debug - API_KEY exists:', !!API_KEY)
-    
-    if (!API_URL) {
-      return new Response(JSON.stringify({
-        success: false,
-        error: 'API_URL not configured. Please check environment variables.'
-      }), { 
-        status: 500,
-        headers: { 'Content-Type': 'application/json' }
-      })
-    }
+    console.log('Using API_URL:', API_URL)
     
     const response = await fetch(API_URL, {
       method: 'POST',
